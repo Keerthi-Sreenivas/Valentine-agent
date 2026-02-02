@@ -106,15 +106,25 @@ if 'agent' not in st.session_state:
     
     # Try Streamlit secrets
     if not api_key:
-        if hasattr(st, 'secrets'):
+        try:
+            # Debug: show available secret keys
+            secret_keys = list(st.secrets.keys()) if hasattr(st, 'secrets') else []
             if "AWS_BEDROCK_API_KEY" in st.secrets:
                 api_key = st.secrets["AWS_BEDROCK_API_KEY"]
             elif "AWS_BEARER_TOKEN_BEDROCK" in st.secrets:
                 api_key = st.secrets["AWS_BEARER_TOKEN_BEDROCK"]
+            elif len(secret_keys) > 0:
+                # Try first available key
+                api_key = st.secrets[secret_keys[0]]
+        except Exception as e:
+            st.warning(f"Secrets error: {e}")
     
     if not api_key:
-        st.error("⚠️ Missing API key. Add AWS_BEDROCK_API_KEY to Streamlit Secrets (Settings → Secrets)")
-        st.info("Format: AWS_BEDROCK_API_KEY = \"your_key_here\"")
+        st.error("⚠️ Missing API key.")
+        try:
+            st.info(f"Available secrets: {list(st.secrets.keys())}")
+        except:
+            st.info("No secrets found")
         st.stop()
     
     # Set env var so boto3/strands can find it
