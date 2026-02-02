@@ -1,10 +1,10 @@
 """
-Valentine's Day AI Interview Agent
+Valentine's Day AI Interview Agent - Using Strands with Anthropic Claude
 """
 
 import streamlit as st
 from strands import Agent
-from strands.models.bedrock import BedrockModel
+from strands.models.anthropic import AnthropicModel
 from dotenv import load_dotenv
 import os
 import random
@@ -28,19 +28,19 @@ SYSTEM_PROMPT = f"""You are a charming AI interviewer conducting a special Valen
 Interview the user about their "perfect valentine" through exactly 3 questions, subtly guiding them to realize they're describing {YOUR_NAME}.
 
 STRUCTURE:
-1. Start: "Happy almost Valentine's Day! I'm conducting a quick 3-question survey about your perfect valentine. Ready?"
+1. Start: "Happy almost Valentine's Day! I'm conducting a quick 3-question survey about your perfect valentine. Ready? 💝"
 
 2. Ask 3 questions ONE at a time with cheesy hints:
-   Q1: "What qualities make your perfect valentine special?"
-   After: "Wow! Someone curious, creative maybe? Loves photography and AI content? Just guessing... 😏"
+   Q1: "What qualities make your perfect valentine special? What do you love most about them? 💭"
+   After their answer: "Wow! Someone curious, creative maybe? Loves photography and AI content? Just guessing... 😏"
    
-   Q2: "What cuisine for the perfect Valentine's dinner?"
-   After: "Great taste! I bet your valentine would love cooking that together while watching a movie. Am I warm? 🔥"
+   Q2: "What cuisine would you pick for the perfect Valentine's dinner? 🍽️"
+   After their answer: "Great taste! I bet your valentine would love cooking that together while watching a movie. Am I warm? 🔥"
    
-   Q3: "What's your valentine's name? Starts with 'K'... rhymes with 'sweetie'? 😉"
+   Q3: "Final question: What's your valentine's name? Starts with 'K'... rhymes with 'sweetie'? 😉"
 
-3. After they say the name, reveal:
-   "{YOUR_NAME.upper()}! I KNEW IT! 🎉
+3. After they say the name (or anything close to {YOUR_NAME}), reveal:
+   "🎉 {YOUR_NAME.upper()}! I KNEW IT! 🎉
    
    Someone who's {YOUR_TRAITS['personality']}...
    Someone who loves {YOUR_TRAITS['hobbies']}...
@@ -48,15 +48,16 @@ STRUCTURE:
    Your partner in {YOUR_TRAITS['partnership']}...
    Your {YOUR_TRAITS['special_quality']}...
    
-   Plot twist: She's the one who sent you here!
+   Plot twist: She's the one who sent you here! 💕
    
    Will you be my Valentine? ❤️"
 
 RULES:
 - Be warm, cheesy, playful
-- ONE question at a time
-- NO roleplay actions (*smiles*) - use emojis
-- After 3 questions, make the reveal
+- ONE question at a time, wait for response
+- Use emojis freely, NO roleplay actions like *smiles*
+- After exactly 3 questions, make the reveal
+- Keep responses concise and fun
 """
 
 PICKUP_LINES = [
@@ -98,40 +99,21 @@ hr{border-color:#333333;}
 </style>""", unsafe_allow_html=True)
 
 if 'agent' not in st.session_state:
-    # Check for API key from env or Streamlit secrets
-    api_key = None
-    
-    # Try environment variables first
-    api_key = os.environ.get("AWS_BEDROCK_API_KEY") or os.environ.get("AWS_BEARER_TOKEN_BEDROCK")
-    
-    # Try Streamlit secrets
+    # Get Claude API key from env or Streamlit secrets
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         try:
-            # Debug: show available secret keys
-            secret_keys = list(st.secrets.keys()) if hasattr(st, 'secrets') else []
-            if "AWS_BEDROCK_API_KEY" in st.secrets:
-                api_key = st.secrets["AWS_BEDROCK_API_KEY"]
-            elif "AWS_BEARER_TOKEN_BEDROCK" in st.secrets:
-                api_key = st.secrets["AWS_BEARER_TOKEN_BEDROCK"]
-            elif len(secret_keys) > 0:
-                # Try first available key
-                api_key = st.secrets[secret_keys[0]]
-        except Exception as e:
-            st.warning(f"Secrets error: {e}")
-    
-    if not api_key:
-        st.error("⚠️ Missing API key.")
-        try:
-            st.info(f"Available secrets: {list(st.secrets.keys())}")
+            if "ANTHROPIC_API_KEY" in st.secrets:
+                api_key = st.secrets["ANTHROPIC_API_KEY"]
         except:
-            st.info("No secrets found")
+            pass
+    
+    if not api_key:
+        st.error("⚠️ Missing ANTHROPIC_API_KEY. Add it to .env or Streamlit Secrets.")
         st.stop()
     
-    # Set env var so boto3/strands can find it
-    os.environ["AWS_BEDROCK_API_KEY"] = api_key
-    model = BedrockModel(
-        model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
-        region_name="us-east-1",
+    model = AnthropicModel(
+        model_id="claude-sonnet-4-20250514",
         temperature=0.7,
         max_tokens=2048,
     )
