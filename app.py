@@ -98,13 +98,21 @@ hr{border-color:#333333;}
 </style>""", unsafe_allow_html=True)
 
 if 'agent' not in st.session_state:
-    # Check for API key - supports both old and new env var names
+    # Check for API key from env or Streamlit secrets
     api_key = os.environ.get("AWS_BEDROCK_API_KEY") or os.environ.get("AWS_BEARER_TOKEN_BEDROCK")
     if not api_key:
-        try: api_key = st.secrets.get("AWS_BEDROCK_API_KEY") or st.secrets.get("AWS_BEARER_TOKEN_BEDROCK")
-        except: pass
-    if api_key:
-        os.environ["AWS_BEDROCK_API_KEY"] = api_key
+        try:
+            api_key = st.secrets["AWS_BEDROCK_API_KEY"]
+        except:
+            try:
+                api_key = st.secrets["AWS_BEARER_TOKEN_BEDROCK"]
+            except:
+                pass
+    if not api_key:
+        st.error("⚠️ Missing API key. Add AWS_BEDROCK_API_KEY to Streamlit Secrets.")
+        st.stop()
+    # Set env var so boto3/strands can find it
+    os.environ["AWS_BEDROCK_API_KEY"] = api_key
     model = BedrockModel(
         model_id="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
         temperature=0.7,
