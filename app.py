@@ -122,15 +122,20 @@ if 'client' not in st.session_state:
 def get_response(user_message):
     """Get response from Claude"""
     st.session_state.chat_history.append({"role": "user", "content": user_message})
-    response = st.session_state.client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        messages=st.session_state.chat_history
-    )
-    assistant_message = response.content[0].text
-    st.session_state.chat_history.append({"role": "assistant", "content": assistant_message})
-    return assistant_message
+    try:
+        response = st.session_state.client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=1024,
+            system=SYSTEM_PROMPT,
+            messages=st.session_state.chat_history
+        )
+        assistant_message = response.content[0].text
+        st.session_state.chat_history.append({"role": "assistant", "content": assistant_message})
+        return assistant_message
+    except Exception as e:
+        st.error(f"API Error: {str(e)}")
+        st.session_state.chat_history.pop()  # Remove the failed user message
+        raise e
 
 st.markdown("# < Valentine.exe />")
 st.markdown("<p style='text-align:center;color:#ff3333;font-family:Fira Code;text-shadow:0 0 10px rgba(255,51,51,0.8);'>// A special program just for you</p>", unsafe_allow_html=True)
