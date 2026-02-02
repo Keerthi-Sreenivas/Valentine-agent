@@ -130,7 +130,8 @@ if 'agent' not in st.session_state:
     # Set env var so boto3/strands can find it
     os.environ["AWS_BEDROCK_API_KEY"] = api_key
     model = BedrockModel(
-        model_id="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+        model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
+        region_name="us-east-1",
         temperature=0.7,
         max_tokens=2048,
     )
