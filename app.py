@@ -1,10 +1,9 @@
 """
-Valentine's Day AI Interview Agent - Using Strands with Anthropic Claude
+Valentine's Day AI Interview Agent - Using Anthropic Claude directly
 """
 
 import streamlit as st
-from strands import Agent
-from strands.models.anthropic import AnthropicModel
+import anthropic
 from dotenv import load_dotenv
 import os
 import random
@@ -98,8 +97,8 @@ hr{border-color:#333333;}
 .card-back{background:linear-gradient(135deg,#cc0000 0%,#ff3333 100%);transform:rotateY(180deg);color:white;font-family:'Fira Code',monospace;font-size:0.9rem;text-align:center;line-height:1.5;}
 </style>""", unsafe_allow_html=True)
 
-if 'agent' not in st.session_state:
-    # Get Claude API key from env or Streamlit secrets
+if 'client' not in st.session_state:
+    # Get Anthropic API key from env or Streamlit secrets
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         try:
@@ -112,17 +111,26 @@ if 'agent' not in st.session_state:
         st.error("⚠️ Missing ANTHROPIC_API_KEY. Add it to .env or Streamlit Secrets.")
         st.stop()
     
-    model = AnthropicModel(
-        model_id="claude-sonnet-4-20250514",
-        temperature=0.7,
-        max_tokens=2048,
-    )
-    st.session_state.agent = Agent(model=model, system_prompt=SYSTEM_PROMPT)
+    st.session_state.client = anthropic.Anthropic(api_key=api_key)
     st.session_state.messages = []
+    st.session_state.chat_history = []
     st.session_state.started = False
     st.session_state.cards_phase = True
     st.session_state.flipped_cards = set()
     st.session_state.selected_lines = random.sample(PICKUP_LINES, 3)
+
+def get_response(user_message):
+    """Get response from Claude"""
+    st.session_state.chat_history.append({"role": "user", "content": user_message})
+    response = st.session_state.client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1024,
+        system=SYSTEM_PROMPT,
+        messages=st.session_state.chat_history
+    )
+    assistant_message = response.content[0].text
+    st.session_state.chat_history.append({"role": "assistant", "content": assistant_message})
+    return assistant_message
 
 st.markdown("# < Valentine.exe />")
 st.markdown("<p style='text-align:center;color:#ff3333;font-family:Fira Code;text-shadow:0 0 10px rgba(255,51,51,0.8);'>// A special program just for you</p>", unsafe_allow_html=True)
@@ -161,8 +169,8 @@ if st.session_state.cards_phase and not st.session_state.started:
 elif st.session_state.started:
     if st.session_state.get('needs_greeting') and not st.session_state.messages:
         with st.spinner("Loading..."):
-            r = st.session_state.agent("Hi!")
-            st.session_state.messages.append({"role": "agent", "content": str(r)})
+            r = get_response("Hi!")
+            st.session_state.messages.append({"role": "agent", "content": r})
             st.session_state.needs_greeting = False
         st.rerun()
     for msg in st.session_state.messages:
@@ -197,8 +205,8 @@ elif st.session_state.started:
 
 if st.session_state.get('pending_response'):
     with st.spinner("..."):
-        r = st.session_state.agent(st.session_state.messages[-1]["content"])
-        st.session_state.messages.append({"role": "agent", "content": str(r)})
+        r = get_response(st.session_state.messages[-1]["content"])
+        st.session_state.messages.append({"role": "agent", "content": r})
         st.session_state.pending_response = False
     st.rerun()
 
