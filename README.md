@@ -51,7 +51,6 @@ streamlit run app.py
 
 ## Tech Stack
 
-- **Strands Agents SDK** - AI agent framework
 - **Amazon Bedrock** - Claude 3.5 Sonnet
 - **Streamlit** - Web UI
 
